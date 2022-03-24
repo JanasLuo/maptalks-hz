@@ -88,17 +88,69 @@ class WMSTileLayer extends TileLayer {
         const max = tileExtent.getMax(),
             min = tileExtent.getMin();
 
-        const bbox = (this._wmsVersion >= 1.3  && this.wmsParams.crs === 'EPSG:4326' ?
-            [min.y, min.x, max.y, max.x] :
-            [min.x, min.y, max.x, max.y]).join(',');
-
-        const url = super.getTileUrl(x, y, z);
-
-        return url +
-            getParamString(this.wmsParams, url, this.options.uppercase) +
-            (this.options.uppercase ? '&BBOX=' : '&bbox=') + bbox;
+        let url = super.getTileUrl(x, y, z);
+        url += getParamString(this.wmsParams, url, this.options.uppercase) 
+        if(this.wmsParams.layers !== 'supermap') {
+          const bbox = (this._wmsVersion >= 1.3 && this.wmsParams.crs === 'EPSG:4326' ?
+          [min.y, min.x, max.y, max.x] :
+          [min.x, min.y, max.x, max.y]).join(',');
+          url += (this.options.uppercase ? '&BBOX=' : '&bbox=') + bbox
+        } else { // 对接超图iServer服务
+          const scale = this.getDefaultScale(max, min);
+          url += "&scale=" + scale + "&x=" + x + "&y=" + y;
+        }
+        return url
     }
-
+     /**
+   * @description 获取默认比例尺信息。
+   */
+      getDefaultScale(max,min) {
+        var ne = max;
+        var sw = min;
+        var tileSize = this.wmsParams.height;
+        var resolution = Math.max(
+          Math.abs(ne.x - sw.x) / tileSize,
+          Math.abs(ne.y - sw.y) / tileSize
+        );
+        var mapUnit = Unit.METER;
+        var crs = this.wmsParams.crs
+        if (crs) {
+          var array = crs.split(':');
+          if (array && array.length > 1) {
+            var code = parseInt(array[1]);
+            mapUnit = code && code >= 4000 && code <= 5000 ? Unit.DEGREE : Unit.METER;
+          }
+        }
+        return this._resolutionToScale(resolution, 96, mapUnit);
+      }
+  
+      _resolutionToScale(resolution, dpi, mapUnit) {
+        var inchPerMeter = 1 / 0.0254;
+        // 地球半径。
+        var meterPerMapUnit = this._getMeterPerMapUnit(mapUnit);
+        var scale = resolution * dpi * inchPerMeter * meterPerMapUnit;
+        scale = 1 / scale;
+        return scale;
+      }
+      _getMeterPerMapUnit(mapUnit) {
+        var earchRadiusInMeters = 6378137;
+        var meterPerMapUnit;
+        if (mapUnit === Unit.METER) {
+            meterPerMapUnit = 1;
+        } else if (mapUnit === Unit.DEGREE) {
+            // 每度表示多少米。
+            meterPerMapUnit = (Math.PI * 2 * earchRadiusInMeters) / 360;
+        } else if (mapUnit === Unit.KILOMETER) {
+            meterPerMapUnit = 1.0e-3;
+        } else if (mapUnit === Unit.INCH) {
+            meterPerMapUnit = 1 / 2.5399999918e-2;
+        } else if (mapUnit === Unit.FOOT) {
+            meterPerMapUnit = 0.3048;
+        } else {
+            return meterPerMapUnit;
+        }
+        return meterPerMapUnit;
+    }
     /**
      * Export the WMSTileLayer's json. <br>
      * It can be used to reproduce the instance by [fromJSON]{@link Layer#fromJSON} method
