@@ -1,5 +1,5 @@
 {
-  "name": "maptalks",
+  "name": "maptalks-hz",
   "version": "1.0.0-rc.2",
   "description": "A light JavaScript library to create integrated 2D/3D maps.",
   "license": "BSD-3-Clause",
@@ -14,10 +14,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/maptalks/maptalks.js.git"
+    "url": "https://github.com/JanasLuo/maptalks-hz.git"
   },
   "bugs": {
-    "url": "https://github.com/maptalks/maptalks.js/issues"
+    "url": "https://github.com/JanasLuo/maptalks-hz/issues"
   },
   "homepage": "https://maptalks.org",
   "scripts": {
