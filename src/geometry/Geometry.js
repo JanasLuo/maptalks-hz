@@ -464,10 +464,6 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
         const symbol = this._sizeSymbol;
         const t = (symbol && symbol['lineWidth'] || 1) / 2;
         this._fixedExtent.set(-t, -t, t, t);
-        const dx = (symbol && symbol['lineDx']) || 0;
-        this._fixedExtent._add([dx, 0]);
-        const dy = (symbol && symbol['lineDy']) || 0;
-        this._fixedExtent._add([0, dy]);
         return this._fixedExtent;
     }
 
@@ -988,8 +984,6 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
         }
         this._layer = layer;
         this._clearCache();
-        this._bindInfoWindow();
-        this._bindMenu();
         // this._clearProjection();
         // this.callInitHooks();
     }
@@ -1272,13 +1266,12 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
     }
 
     _getSizeSymbol(symbol) {
-        const symbolSize = loadGeoSymbol({
-            lineWidth: symbol['lineWidth'],
-            lineDx: symbol['lineDx'],
-            lineDy: symbol['lineDy']
-        }, this);
-        if (isFunctionDefinition(symbol['lineWidth']) || isFunctionDefinition(symbol['lineDx']) || isFunctionDefinition(symbol['lineDy'])) {
+        let symbolSize;
+        if (isFunctionDefinition(symbol['lineWidth'])) {
+            symbolSize = loadGeoSymbol({ lineWidth: symbol['lineWidth'] }, this);
             symbolSize._dynamic = true;
+        } else {
+            symbolSize = { lineWidth: symbol['lineWidth'] };
         }
         return symbolSize;
     }

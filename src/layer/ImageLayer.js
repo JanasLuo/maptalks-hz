@@ -136,10 +136,7 @@ export class ImageLayerCanvasRenderer extends CanvasRenderer {
         return urls;
     }
 
-    retireImage(image) {
-        if (image.close) {
-            image.close();
-        }
+    retireImage(/* image */) {
 
     }
 
@@ -241,9 +238,6 @@ export class ImageLayerGLRenderer extends ImageGLRenderable(ImageLayerCanvasRend
     }
 
     retireImage(image) {
-        if (image.close) {
-            image.close();
-        }
         this.disposeImage(image);
     }
 

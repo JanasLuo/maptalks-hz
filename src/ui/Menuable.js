@@ -58,7 +58,7 @@ const Menuable = {
         }
         if (!this._menu) {
             if (this._menuOptions && map) {
-                this._bindMenu();
+                this._bindMenu(this._menuOptions);
                 this._menu.show(coordinate);
             }
         } else {
@@ -179,11 +179,8 @@ const Menuable = {
         return this;
     },
 
-    _bindMenu() {
-        if (!this._menuOptions) {
-            return this;
-        }
-        this._menu = new Menu(this._menuOptions);
+    _bindMenu(options) {
+        this._menu = new Menu(options);
         this._menu.addTo(this);
 
         return this;

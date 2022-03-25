@@ -106,7 +106,6 @@ class ToolTip extends UIComponent {
         if (this.isVisible()) {
             this._removePrevDOM();
         }
-        this._switchMapEvents('off');
     }
 
     onMouseMove(e) {

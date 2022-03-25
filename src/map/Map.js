@@ -8,8 +8,7 @@ import {
     isFunction,
     sign,
     UID,
-    b64toBlob,
-    isNumber
+    b64toBlob
 } from '../core/util';
 import Class from '../core/Class';
 import Browser from '../core/Browser';
@@ -36,8 +35,6 @@ const TEMP_COORD = new Coordinate(0, 0);
  * @property {Number}  [options.zoomAnimationDuration=330]      - zoom animation duration.
  * @property {Boolean} [options.panAnimation=true]              - continue to animate panning when draging or touching ended.
  * @property {Boolean} [options.panAnimationDuration=600]       - duration of pan animation.
- * @property {Boolean} [options.rotateAnimation=true]           - continue to animate rotating when draging or touching rotation ended.
- * @property {Boolean} [options.rotateAnimationDuration=800]    - duration of rotate animation.
  * @property {Boolean} [options.zoomable=true]                  - whether to enable map zooming.
  * @property {Boolean} [options.enableInfoWindow=true]          - whether to enable infowindow on this map.
  * @property {Boolean} [options.hitDetect=true]                 - whether to enable hit detecting of layers for cursor style on this map, disable it to improve performance.
@@ -98,13 +95,8 @@ const options = {
     'panAnimation': (function () {
         return !IS_NODE;
     })(),
-
     //default pan animation duration
     'panAnimationDuration': 600,
-
-    'rotateAnimation': (function () {
-        return !IS_NODE;
-    })(),
 
     'zoomable': true,
     'enableInfoWindow': true,
@@ -217,6 +209,8 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
 
         this.setSpatialReference(opts['spatialReference'] || opts['view']);
 
+        this.setMaxExtent(opts['maxExtent']);
+
 
         this._mapViewPoint = new Point(0, 0);
 
@@ -229,8 +223,6 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
         if (layers) {
             this.addLayer(layers);
         }
-
-        this.setMaxExtent(opts['maxExtent']);
 
         this._Load();
     }
@@ -569,16 +561,11 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
         if (extent) {
             const maxExt = new Extent(extent, this.getProjection());
             this.options['maxExtent'] = maxExt;
+            if (!this._verifyExtent(this._getPrjCenter())) {
+                this._panTo(this._prjMaxExtent().getCenter());
+            }
             const projection = this.getProjection();
             this._prjMaxExtent = maxExt.convertTo(c => projection.project(c));
-            if (!this._verifyExtent(this._getPrjCenter())) {
-                if (this._loaded) {
-                    this._panTo(this._prjMaxExtent.getCenter());
-                } else {
-                    this._center = projection.unproject(this._prjMaxExtent.getCenter());
-                }
-
-            }
         } else {
             delete this.options['maxExtent'];
             delete this._prjMaxExtent;
@@ -1299,8 +1286,8 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
     /**
      * shorter alias for pointAtResToCoordinate
      */
-    pointAtResToCoord(point, res, out) {
-        return this.pointAtResToCoordinate(point, res, out);
+    pointAtResToCoord(point, zoom, out) {
+        return this.pointAtResToCoordinate(point, zoom, out);
     }
 
 
@@ -1370,13 +1357,13 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
      * @return {Map} this
      * @fires Map#resize
      */
-    checkSize(force) {
+    checkSize() {
         const justStart = ((now() - this._initTime) < 1500) && this.width === 0 || this.height === 0;
 
         const watched = this._getContainerDomSize(),
             oldHeight = this.height,
             oldWidth = this.width;
-        if (!force && watched['width'] === oldWidth && watched['height'] === oldHeight) {
+        if (watched['width'] === oldWidth && watched['height'] === oldHeight) {
             return this;
         }
         // refresh map's dom position
@@ -1476,9 +1463,6 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
         delete this.renderer;
         this._fireEvent('removeend');
         this._clearAllListeners();
-        if (Browser.removeDPRListening) {
-            Browser.removeDPRListening(this);
-        }
         return this;
     }
 
@@ -1504,9 +1488,6 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
      * @fires Map#movestart
      */
     onMoveStart(param) {
-        if (this._mapAnimPlayer) {
-            this._stopAnim(this._mapAnimPlayer);
-        }
         const prjCenter = this._getPrjCenter();
         if (!this._originCenter || this._verifyExtent(prjCenter)) {
             this._originCenter = prjCenter;
@@ -1636,24 +1617,11 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
     }
 
     /**
-     * Get map's devicePixelRatio, you can override it by setting devicePixelRatio in options.
+     * Get device's devicePixelRatio, you can override it by setting devicePixelRatio in options.
      * @returns {Number}
      */
     getDevicePixelRatio() {
         return this.options['devicePixelRatio'] || Browser.devicePixelRatio || 1;
-    }
-
-    /**
-     * Set map's devicePixelRatio
-     * @param {Number} dpr
-     * @returns {Map} this
-     */
-    setDevicePixelRatio(dpr) {
-        if (isNumber(dpr) && dpr > 0 && dpr !== this.options['devicePixelRatio']) {
-            this.options['devicePixelRatio'] = dpr;
-            this.checkSize(true);
-        }
-        return this;
     }
 
     //-----------------------------------------------------------
@@ -1883,11 +1851,6 @@ class Map extends Handlerable(Eventable(Renderable(Class))) {
         }
         const containerDOM = this._containerDOM;
         let width, height;
-        if (this._containerDomContentRect) {
-            width = this._containerDomContentRect.width;
-            height = this._containerDomContentRect.height;
-            return new Size(width, height);
-        }
         if (!isNil(containerDOM.width) && !isNil(containerDOM.height)) {
             width = containerDOM.width;
             height = containerDOM.height;
@@ -2287,9 +2250,9 @@ Map.include(/** @lends Map.prototype */{
      * Convert a geographical coordinate to the container point. <br>
      * Batch conversion for better performance <br>
      *  A container point is a point relative to map container's top-left corner. <br>
-     * @param {Coordinate[]}                - coordinates
+     * @param {Array[Coordinate]}                - coordinates
      * @param  {Number} [zoom=undefined]  - zoom level
-     * @return {Point[]}
+     * @return {Array[Point]}
      * @function
      */
     coordinatesToContainerPoints(coordinates, zoom) {
@@ -2301,9 +2264,9 @@ Map.include(/** @lends Map.prototype */{
      * Convert a geographical coordinate to the container point. <br>
      * Batch conversion for better performance <br>
      *  A container point is a point relative to map container's top-left corner. <br>
-     * @param {Coordinate[]}                - coordinates
+     * @param {Array[Coordinate]}                - coordinates
      * @param  {Number} [resolution=undefined]  - container points' resolution
-     * @return {Point[]}
+     * @return {Array[Point]}
      * @function
      */
     coordinatesToContainerPointsAtRes: function () {

@@ -26,7 +26,6 @@ import Geometry from '../geometry/Geometry';
  * @property {Boolean} [options.single=true]    - whether the UI is a global single one, only one UI will be shown at the same time if set to true.
  * @property {Boolean} [options.animation=null]         - fade | scale | fade,scale, add animation effect when showing and hiding.
  * @property {Number}  [options.animationDuration=300]  - animation duration, in milliseconds.
- * @property {Number}  [options.animationOnHide=false]  - if calls animation on hiding.
  * @property {Boolean}  [options.pitchWithMap=false]    - whether tilt with map
  * @property {Boolean}  [options.rotateWithMap=false]  - whether rotate with map
  * @memberOf ui.UIComponent
@@ -41,7 +40,7 @@ const options = {
     'autoPanDuration': 600,
     'single': true,
     'animation': 'scale',
-    'animationOnHide': false,
+    'animationOnHide': true,
     'animationDuration': 500,
     'pitchWithMap': false,
     'rotateWithMap': false,
@@ -137,6 +136,9 @@ class UIComponent extends Eventable(Class) {
             return this;
         }
         this.options['visible'] = true;
+        if (!this._mapEventsOn) {
+            this._switchMapEvents('on');
+        }
 
         coordinate = coordinate || this._coordinate || this._owner.getCenter();
 
@@ -153,14 +155,10 @@ class UIComponent extends Eventable(Class) {
         this.fire('showstart');
         const container = this._getUIContainer();
         this._coordinate = coordinate;
-        //when single will off map events
         this._removePrevDOM();
-        if (!this._mapEventsOn) {
-            this._switchMapEvents('on');
-        }
         const dom = this.__uiDOM = this.buildOn(map);
         dom['eventsPropagation'] = this.options['eventsPropagation'];
-        this._observerDomSize(dom);
+
         if (!dom) {
             /**
              * showend event.
@@ -177,7 +175,6 @@ class UIComponent extends Eventable(Class) {
         this._measureSize(dom);
 
         if (this._singleton()) {
-            dom._uiComponent = this;
             map[this._uiDomKey()] = dom;
         }
 
@@ -283,8 +280,6 @@ class UIComponent extends Eventable(Class) {
         if (anim.scale) {
             dom.style[TRANSFORM] = this._toCSSTranslate(this._pos) + ' scale(0)';
         }
-        //remove map bind events
-        this._switchMapEvents('off');
         return this;
     }
 
@@ -337,11 +332,6 @@ class UIComponent extends Eventable(Class) {
      * @return {Size} size
      */
     getSize() {
-        if (this._domContentRect && this._size) {
-            //update size by resizeObserver result
-            this._size.width = this._domContentRect.width;
-            this._size.height = this._domContentRect.height;
-        }
         if (this._size) {
             return this._size.copy();
         } else {
@@ -501,10 +491,6 @@ class UIComponent extends Eventable(Class) {
                     off(map[key], eventsToStop, stopPropagation);
                 }
                 removeDomNode(map[key]);
-                //remove map bind events
-                if (map[key]._uiComponent && !this.hideDom) {
-                    map[key]._uiComponent._switchMapEvents('off');
-                }
                 delete map[key];
             }
             delete this.__uiDOM;
@@ -514,12 +500,6 @@ class UIComponent extends Eventable(Class) {
             }
             removeDomNode(this.__uiDOM);
             delete this.__uiDOM;
-        }
-        if (this._resizeObserver) {
-            //dispose resizeObserver
-            this._resizeObserver.disconnect();
-            delete this._resizeObserver;
-            delete this._domContentRect;
         }
     }
 
@@ -564,8 +544,7 @@ class UIComponent extends Eventable(Class) {
     }
 
     _switchEvents(to) {
-        //At the beginning,not bind map events,bind evetns when show
-        // this._switchMapEvents(to);
+        this._switchMapEvents(to);
         const ownerEvents = this._getOwnerEvents();
         if (this._owner) {
             for (const p in ownerEvents) {
@@ -589,7 +568,6 @@ class UIComponent extends Eventable(Class) {
         const events = {};
         if (this._owner && (this._owner instanceof Geometry)) {
             events.positionchange = this.onGeometryPositionChange;
-            events.symbolchange = this.onGeometryPositionChange;
         }
         if (this.getOwnerEvents) {
             extend(events, this.getOwnerEvents());
@@ -629,13 +607,6 @@ class UIComponent extends Eventable(Class) {
         }
     }
 
-    onDomSizeChange() {
-        if (this.isVisible()) {
-            //when dom resize , update position
-            this._setPosition();
-        }
-    }
-
     _updatePosition() {
         // update position in the next frame to sync with layers
         const renderer = this.getMap()._getRenderer();
@@ -670,25 +641,6 @@ class UIComponent extends Eventable(Class) {
         } else {
             return 'translate(' + p.x + 'px,' + p.y + 'px)';
         }
-    }
-
-    _observerDomSize(dom) {
-        if (!dom || !Browser.resizeObserver || this._resizeObserver) {
-            return this;
-        }
-        this._resizeObserver = new ResizeObserver((entries) => {
-            if (entries.length) {
-                this._domContentRect = entries[0].contentRect;
-            } else {
-                delete this._domContentRect;
-            }
-            //update dom position
-            if (this.onDomSizeChange) {
-                this.onDomSizeChange();
-            }
-        });
-        this._resizeObserver.observe(dom);
-        return this;
     }
 
     isSupportZoomFilter() {

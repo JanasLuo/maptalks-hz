@@ -28,14 +28,14 @@ export default class CanvasLayerRenderer extends CanvasRenderer {
         return super.needToRedraw();
     }
 
-    draw(...args) {
+    draw() {
         this.prepareCanvas();
         this.prepareDrawContext();
-        this._drawLayer(...args);
+        this._drawLayer();
     }
 
-    drawOnInteracting(...args) {
-        this._drawLayerOnInteracting(...args);
+    drawOnInteracting() {
+        this._drawLayerOnInteracting();
     }
 
     getCanvasImage() {
@@ -127,24 +127,24 @@ export default class CanvasLayerRenderer extends CanvasRenderer {
         return args;
     }
 
-    _drawLayer(...args) {
-        const params = this._prepareDrawParams();
-        if (!params) {
+    _drawLayer() {
+        const args = this._prepareDrawParams();
+        if (!args) {
             return;
         }
-        this.layer.draw.apply(this.layer, params.concat(args));
+        this.layer.draw.apply(this.layer, args);
         this.completeRender();
     }
 
-    _drawLayerOnInteracting(...args) {
+    _drawLayerOnInteracting() {
         if (!this.layer.drawOnInteracting) {
             return;
         }
-        const params = this._prepareDrawParams();
-        if (!params) {
+        const args = this._prepareDrawParams();
+        if (!args) {
             return;
         }
-        this.layer.drawOnInteracting.apply(this.layer, params.concat(args));
+        this.layer.drawOnInteracting.apply(this.layer, args);
         this.completeRender();
     }
 }

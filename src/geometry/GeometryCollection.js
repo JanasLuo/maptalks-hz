@@ -3,7 +3,6 @@ import { createFilter, getFilterFeature } from '@maptalks/feature-filter';
 import { getExternalResources } from '../core/util/resource';
 import Coordinate from '../geo/Coordinate';
 import PointExtent from '../geo/PointExtent';
-import Extent from '../geo/Extent';
 import Geometry from './Geometry';
 
 const TEMP_EXTENT = new PointExtent();
@@ -523,17 +522,17 @@ function computeExtent(projection, fn) {
     if (this.isEmpty()) {
         return null;
     }
-    const extent = new Extent();
     const geometries = this.getGeometries();
+    let result = null;
     for (let i = 0, l = geometries.length; i < l; i++) {
-        if (!geometries[i]) {
+        const geo = geometries[i];
+        if (!geo) {
             continue;
         }
-        const e = geometries[i][fn](projection);
-        if (e) {
-            extent._combine(e);
+        const geoExtent = geo[fn](projection);
+        if (geoExtent) {
+            result = geoExtent.combine(result);
         }
     }
-
-    return extent;
+    return result;
 }

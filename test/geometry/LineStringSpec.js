@@ -303,15 +303,6 @@ describe('Geometry.LineString', function () {
         expect(layer.identify({x: 118.84733998413094, y: 32.04636121481619}).length).to.be.above(0);
     });
 
-    //issue #1595
-    it('identify line with dx, dy, #1595', function () {
-        var line = new maptalks.LineString([map.getCenter(), map.getCenter().add(0.001, 0)], { symbol: { lineDx: 20, lineDy: 20, lineWidth :4 }});
-        layer.addGeometry(line);
-
-        var point = new maptalks.Point(map.width / 2 + 20, map.height / 2 + 20);
-        expect(layer.identifyAtPoint(point).length).to.be.above(0);
-    });
-
     //issue #522
     it('drawn with arrow of vertex-first', function () {
         map.setPitch(60);
@@ -532,42 +523,6 @@ describe('Geometry.LineString', function () {
             var extent = polyline.getContainerExtent().round().toString();
             console.log(extent);
             expect(extent).to.be.eql('-404,-38,320,151');
-        });
-
-        it('markerPlacement of vertex-first with LineString of 1 coord', function () {
-            var lineWidth = 8;
-            var line = new maptalks.LineString([map.getCenter()], {
-                symbol: [{
-                    'lineColor': '#1bbc9b',
-                    'lineWidth': 6,
-                    'lineJoin': 'round', //miter, round, bevel
-                    'lineCap': 'round', //butt, round, square
-                    'lineDasharray': null, //dasharray, e.g. [10, 5, 5]
-                    'lineOpacity ': 1
-                  }, {
-                    markerType: 'ellipse',
-                    markerPlacement: 'vertex-first',
-                  }]
-            });
-            layer.addGeometry(line);
-        });
-
-        it('markerPlacement of vertex-last with LineString of 1 coord', function () {
-            var lineWidth = 8;
-            var line = new maptalks.LineString([map.getCenter()], {
-                symbol: [{
-                    'lineColor': '#1bbc9b',
-                    'lineWidth': 6,
-                    'lineJoin': 'round', //miter, round, bevel
-                    'lineCap': 'round', //butt, round, square
-                    'lineDasharray': null, //dasharray, e.g. [10, 5, 5]
-                    'lineOpacity ': 1
-                  }, {
-                    markerType: 'ellipse',
-                    markerPlacement: 'vertex-last',
-                  }]
-            });
-            layer.addGeometry(line);
         });
     });
 

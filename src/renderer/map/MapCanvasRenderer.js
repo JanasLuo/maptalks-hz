@@ -1,11 +1,10 @@
-import { IS_NODE, isNumber, isFunction, requestAnimFrame, cancelAnimFrame, equalMapView, calCanvasSize } from '../../core/util';
+import { IS_NODE, isNumber, isFunction, requestAnimFrame, cancelAnimFrame, equalMapView } from '../../core/util';
 import { createEl, preventSelection, computeDomPosition, addDomEvent, removeDomEvent } from '../../core/util/dom';
 import Browser from '../../core/Browser';
 import Point from '../../geo/Point';
 import Canvas2D from '../../core/Canvas';
 import MapRenderer from './MapRenderer';
 import Map from '../../map/Map';
-import { getGlobalWorkerPool } from '../../core/worker/WorkerPool';
 
 /**
  * @classdesc
@@ -604,7 +603,6 @@ class MapCanvasRenderer extends MapRenderer {
         this._frameTimestamp = framestamp;
         this._resizeCount = 0;
         this.renderFrame(framestamp);
-        getGlobalWorkerPool().commit();
         // Keep registering ourselves for the next animation frame
         this._animationFrame = requestAnimFrame((framestamp) => { this._frameLoop(framestamp); });
     }
@@ -769,21 +767,20 @@ class MapCanvasRenderer extends MapRenderer {
             mapSize = map.getSize(),
             canvas = this.canvas,
             r = map.getDevicePixelRatio();
-        // width/height不变并不意味着 css width/height 不变
-        const { width, height, cssWidth, cssHeight } = calCanvasSize(mapSize, r);
-        if (canvas.style && (canvas.style.width !== cssWidth || canvas.style.height !== cssHeight)) {
-            canvas.style.width = cssWidth;
-            canvas.style.height = cssHeight;
-        }
-        if (width === canvas.width && height === canvas.height) {
+        if (mapSize['width'] * r === canvas.width && mapSize['height'] * r === canvas.height) {
             return false;
         }
         //retina屏支持
 
-        canvas.height = height;
-        canvas.width = width;
+        canvas.height = r * mapSize['height'];
+        canvas.width = r * mapSize['width'];
         this.topLayer.width = canvas.width;
         this.topLayer.height = canvas.height;
+        if (canvas.style) {
+            canvas.style.width = mapSize['width'] + 'px';
+            canvas.style.height = mapSize['height'] + 'px';
+        }
+
         return true;
     }
 
@@ -833,7 +830,6 @@ class MapCanvasRenderer extends MapRenderer {
                     if (!this.map || this.map.isRemoved()) {
                         this._resizeObserver.disconnect();
                     } else if (entries.length) {
-                        this.map._containerDomContentRect = entries[0].contentRect;
                         this._checkSize(entries[0].contentRect);
                         this._resizeCount = this._resizeCount || 0;
                         //force render all layers,这两句代码不能颠倒，因为要先重置所有图层的size，才能正确的渲染所有图层
@@ -888,9 +884,6 @@ class MapCanvasRenderer extends MapRenderer {
 
         if (Browser.webgl && typeof document !== 'undefined') {
             addDomEvent(document, 'visibilitychange', this._thisVisibilitychange, this);
-        }
-        if (Browser.addDPRListening) {
-            Browser.addDPRListening(this.map);
         }
     }
 

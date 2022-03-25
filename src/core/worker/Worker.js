@@ -1,5 +1,3 @@
-import { isFunction } from '../util/common.js';
-
 let adapters = {};
 /**
  * Register a worker adapter
@@ -32,19 +30,6 @@ const header = `
     var adapters = {};
     onmessage = function (msg) {
         msg = msg.data;
-        if (msg.messageType === 'batch') {
-            const messages = msg.messages;
-            if (messages) {
-                for (let i = 0; i < messages.length; i++) {
-                    dispatch(messages[i]);
-                }
-            }
-        } else {
-            dispatch(msg);
-        }
-    };
-
-    function dispatch(msg) {
         var workerKey = msg.workerKey;
         var adapter = adapters[workerKey];
         if (!adapter) {
@@ -58,8 +43,7 @@ const header = `
             console.error(err);
             throw err;
         }
-    }
-
+    };
     function post(callback, err, data, buffers) {
         var msg = {
             callback : callback
@@ -90,13 +74,7 @@ const footer = `
 function compileWorkerSource() {
     let source = header;
     for (const p in adapters) {
-        let adapter = adapters[p];
-        if (isFunction(adapter)) {
-            if (adapter.length === 0) {
-                // new definition form of worker source
-                adapter = adapter();
-            }
-        }
+        const adapter = adapters[p];
         source += `
     workerExports = {};
     (${adapter})(workerExports, self);

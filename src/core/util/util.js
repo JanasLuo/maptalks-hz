@@ -460,10 +460,6 @@ export function getPointsResultPts(points = [], ptKey = '_pt') {
     const resultPoints = [];
     for (let i = 0, len = points.length; i < len; i++) {
         const point = points[i];
-        if (!point) {
-            resultPoints.push(null);
-            continue;
-        }
         if (!point[ptKey]) {
             point[ptKey] = new Point(0, 0);
         }
@@ -473,46 +469,4 @@ export function getPointsResultPts(points = [], ptKey = '_pt') {
         resultPoints.push(pt);
     }
     return resultPoints;
-}
-
-
-let BITMAP_CTX;
-if (Browser.decodeImageInWorker) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    BITMAP_CTX = canvas.getContext('2d');
-}
-export function getImageBitMap(data, cb) {
-    const imageData = BITMAP_CTX.createImageData(data.width, data.height);
-    imageData.data.set(data.data);
-    createImageBitmap(imageData).then(bitmap => {
-        cb(bitmap);
-    });
-}
-
-export function getAbsoluteURL(url) {
-    if (url && url.indexOf('http://') === 0 || url.indexOf('https://') === 0) {
-        return url;
-    }
-    let a = document.createElement('a');
-    a.href = url;
-    url = a.href;
-    a = null;
-    return url;
-}
-
-const CANVAS_SIZE_TEMP = {
-    cssWidth: '1px',
-    cssHeight: '1px',
-    width: 1,
-    height: 1
-};
-export function calCanvasSize(size, devicePixelRatio = 1) {
-    const { width, height } = size;
-    CANVAS_SIZE_TEMP.cssWidth = width + 'px';
-    CANVAS_SIZE_TEMP.cssHeight = height + 'px';
-    CANVAS_SIZE_TEMP.width = Math.round(width * devicePixelRatio);
-    CANVAS_SIZE_TEMP.height = Math.round(height * devicePixelRatio);
-    return CANVAS_SIZE_TEMP;
 }

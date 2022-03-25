@@ -1,6 +1,6 @@
 {
   "name": "maptalks-hz",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-beta.7",
   "description": "A light JavaScript library to create integrated 2D/3D maps.",
   "license": "BSD-3-Clause",
   "author": "Fu Zhen",
@@ -38,12 +38,9 @@
     "version": "npm run build",
     "publish-next": "npm publish --tag next"
   },
-  "unpkg": "dist/maptalks.js",
-  "jsdelivr": "dist/maptalks.js",
-  "module": "dist/maptalks.es-bundler.js",
-  "module_browser": "dist/maptalks.es.js",
+  "module": "dist/maptalks.es.js",
   "main": "dist/maptalks.js",
-  "jsnext:main": "dist/maptalks.es-bundler.js",
+  "jsnext:main": "dist/maptalks.es.js",
   "style": "dist/maptalks.css",
   "dependencies": {
     "@maptalks/feature-filter": "^1.0.0",

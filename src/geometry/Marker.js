@@ -147,7 +147,6 @@ class Marker extends CenterMixin(Geometry) {
         const resources = renderer && renderer.resources;
         const textDesc = this.getTextDesc();
         if (Array.isArray(symbol)) {
-            TEMP_EXTENT.set(0, 0, 0, 0);
             for (let i = 0; i < symbol.length; i++) {
                 if (!symbol[i]) {
                     continue;

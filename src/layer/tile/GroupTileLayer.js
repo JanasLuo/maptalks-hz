@@ -105,7 +105,7 @@ class GroupTileLayer extends TileLayer {
      * @param {Number} z
      * @returns {Object} tiles
      */
-    getTiles(z, parentLayer) {
+    getTiles(z) {
         const layers = this.layers;
         const tiles = [];
         let count = 0;
@@ -114,7 +114,7 @@ class GroupTileLayer extends TileLayer {
             if (!layer.options['visible']) {
                 continue;
             }
-            const childGrid = layer.getTiles(z, parentLayer || this);
+            const childGrid = layer.getTiles(z, this);
             if (!childGrid || childGrid.count === 0) {
                 continue;
             }
